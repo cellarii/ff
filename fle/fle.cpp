@@ -60,3 +60,74 @@ vector<inf> openDir(const path& path) {
     }
     return data;
 }
+
+void showDir(const vector<inf>& data, const path& path, int ind) {
+    system("cls");
+    cout << "Текущая директория: " << path.string() << "\n\n";
+    cout << left << setw(5) << ""
+        << left << setw(35) << "Имя"
+        << left << setw(10) << "Тип"
+        << left << setw(15) << "Размер" << "\t"
+        << "Дата изменения\n";
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        cout << (i == ind ? "> " : "  ")
+            << left << setw(35) << data[i].name
+            << left << setw(10) << (data[i].flag ? "Папка" : "Файл")
+            << left << setw(15) << (!data[i].flag ? to_string(data[i].size) : " ")
+            << data[i].time << "\n";
+    }
+}
+
+void newFile(const path& path) {
+    string name;
+    cout << "Введите имя файла: ";
+    cin >> name;
+
+    auto full = path / name;
+    if (exists(full)) {
+        cout << "Файл или папка с таким именем уже существует\n";
+        system("pause");
+        return;
+    }
+    ofstream file(full);
+
+    if (file.is_open()) {
+        cout << "Файл создан\n";
+        file.close();
+    }
+    else {
+        cout << "Ошибка создания файла: ";
+        if (!exists(path)) {
+            cout << " указанный путь не существует\n";
+        }
+        else {
+            cout << " нет прав доступа или недопустимое имя файла\n";
+        }
+    }
+
+    system("pause");
+}
+
+void newDir(const path& path) {
+    string dirname;
+    cout << "Введите имя папки: ";
+    cin >> dirname;
+
+    bool create = create_directory(path / dirname);
+
+    if (create) {
+        cout << "Папка создана\n";
+    }
+    else {
+        cout << "Ошибка создания папки,  ";
+        if (exists(path / dirname)) {
+            cout << "  папка уже существует\n";
+        }
+        else {
+            cout << " нет прав доступа или неверный путь\n";
+        }
+    }
+
+    system("pause");
+}
