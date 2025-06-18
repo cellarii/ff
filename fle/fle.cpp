@@ -109,24 +109,33 @@ void newFile(const path& path) {
     system("pause");
 }
 
+
+
 void newDir(const path& path) {
     string dirname;
     cout << "Введите имя папки: ";
     cin >> dirname;
 
-    bool create = create_directory(path / dirname);
+    auto patth = path / dirname;
+
+    if (exists(patth)) {
+        if (is_directory(patth)) {
+            cout << "Ошибка: Папка с таким именем уже существует\n";
+        }
+        else {
+            cout << "Ошибка: Файл с таким именем уже существует\n";
+        }
+        system("pause");
+        return;
+    }
+
+    bool create = create_directory(patth);
 
     if (create) {
         cout << "Папка создана\n";
     }
     else {
-        cout << "Ошибка создания папки,  ";
-        if (exists(path / dirname)) {
-            cout << "  папка уже существует\n";
-        }
-        else {
-            cout << " нет прав доступа или неверный путь\n";
-        }
+        cout << "Ошибка создания папки: нет прав доступа или неверный путь\n";
     }
 
     system("pause");
@@ -159,7 +168,20 @@ void rename(const path& path, const string& name1) {
     string name2;
     cout << "Введите новое имя: ";
     cin >> name2;
+
     try {
+
+        if (exists(path / name2)) {
+            if (is_directory(path / name2)) {
+                cout << "Ошибка: Папка с таким именем уже существует\n";
+            }
+            else {
+                cout << "Ошибка: Файл с таким именем уже существует\n";
+            }
+            system("pause");
+            return;
+        }
+
         rename(path / name1, path / name2);
         cout << "Переименовано\n";
     }
@@ -247,42 +269,42 @@ int main() {
                 ind++;
                 break;
             }
-        case 13:
+        case 13: // Enter
             if (!data.empty() && data[ind].flag) {
                 path /= data[ind].name;
                 data = openDir(path);
                 ind = 0;
             }
             break;
-        case 8:
+        case 8: //Back
             if (path.has_parent_path()) {
                 path = path.parent_path();
                 data = openDir(path);
                 ind = 0;
             }
             break;
-        case 59:
+        case 59: // F1
             newFile(path);
             data = openDir(path);
             break;
-        case 60:
+        case 60: // F2
             newDir(path);
             data = openDir(path);
             break;
-        case 61:
+        case 61: // F3
             if (!data.empty()) {
                 remove(path, data[ind].name, data[ind].flag);
                 data = openDir(path);
                 if (ind >= data.size()) ind = data.size() - 1;
             }
             break;
-        case 62:
+        case 62: // F4
             if (!data.empty()) {
                 rename(path, data[ind].name);
                 data = openDir(path);
             }
             break;
-        case 63:
+        case 63: // F5
         {
             string keyword;
             cout << "Введите слово для поиска: ";
@@ -290,7 +312,7 @@ int main() {
             search(path, keyword);
             break;
         }
-        case 27:
+        case 27: // esc
             return 0;
         }
     }
