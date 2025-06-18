@@ -168,3 +168,42 @@ void rename(const path& path, const string& name1) {
     }
     system("pause");
 }
+
+void search(const path& path, const string& keyword) {
+    vector<pair<filesystem::path, int>> results;
+
+    try {
+        for (const auto& file : recursive_directory_iterator(path)) {
+            if (file.is_regular_file() && file.path().extension() == ".txt") {
+                ifstream inFile(file.path());
+                string line;
+                int count = 0;
+
+                while (getline(inFile, line)) {
+                    for (size_t pos = line.find(keyword); pos != string::npos; pos = line.find(keyword, pos + keyword.length())) {
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    results.emplace_back(file.path(), count);
+                }
+            }
+        }
+
+        if (results.empty()) {
+            cout << "Слово \"" << keyword << "\" не найдено.\n";
+        }
+        else {
+            cout << "Результаты поиска для слова \"" << keyword << "\":\n";
+            for (const auto& [filePath, count] : results) {
+                cout << filePath << " - " << count << " совпадений\n";
+            }
+        }
+    }
+    catch (const exception& e) {
+        cerr << "Ошибка: " << e.what() << "\n";
+    }
+
+    system("pause");
+}
