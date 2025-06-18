@@ -254,5 +254,37 @@ int main() {
                 ind = 0;
             }
             break;
+        case 59:
+            newFile(path);
+            data = openDir(path);
+            break;
+        case 60:
+            newDir(path);
+            data = openDir(path);
+            break;
+        case 61:
+            if (!data.empty()) {
+                remove(path, data[ind].name, data[ind].flag);
+                data = openDir(path);
+                if (ind >= data.size()) ind = data.size() - 1;
+            }
+            break;
+        case 62:
+            if (!data.empty()) {
+                rename(path, data[ind].name);
+                data = openDir(path);
+            }
+            break;
+        case 63:
+        {
+            string keyword;
+            cout << "Введите слово для поиска: ";
+            cin >> keyword;
+            search(path, keyword);
+            break;
+        }
+        case 27:
+            return 0;
+        }
     }
 }
