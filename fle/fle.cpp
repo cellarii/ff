@@ -131,3 +131,40 @@ void newDir(const path& path) {
 
     system("pause");
 }
+
+void remove(const path& path, const string& name, bool flag) {
+    try {
+        bool result;
+        if (flag) {
+            result = remove_all(path / name);
+        }
+        else {
+            result = remove(path / name);
+        }
+
+        if (result) {
+            cout << "Удалено\n";
+        }
+        else {
+            cout << "Ошибка удаления\n";
+        }
+    }
+    catch (const exception& e) {
+        cerr << "Ошибка: " << e.what() << "\n";
+    }
+    system("pause");
+}
+
+void rename(const path& path, const string& name1) {
+    string name2;
+    cout << "Введите новое имя: ";
+    cin >> name2;
+    try {
+        rename(path / name1, path / name2);
+        cout << "Переименовано\n";
+    }
+    catch (const exception& e) {
+        cerr << "Ошибка: " << e.what() << "\n";
+    }
+    system("pause");
+}
