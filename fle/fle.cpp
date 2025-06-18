@@ -254,6 +254,13 @@ int main() {
                 ind = 0;
             }
             break;
+        case 8:
+            if (path.has_parent_path()) {
+                path = path.parent_path();
+                data = openDir(path);
+                ind = 0;
+            }
+            break;
         case 59:
             newFile(path);
             data = openDir(path);
