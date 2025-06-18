@@ -207,3 +207,52 @@ void search(const path& path, const string& keyword) {
 
     system("pause");
 }
+
+void help() {
+    cout << "\nУправление:\n"
+        << "Стрелки - Навигация\n"
+        << "Enter - Открыть папку\n"
+        << "Backspace - Назад\n"
+        << "F1 - Создать файл\n"
+        << "F2 - Создать папку\n"
+        << "F3 - Удалить\n"
+        << "F4 - Переименовать\n"
+        << "F5 - Поиск слова в текстовых файлах\n"
+        << "ESC - Выход\n";
+}
+
+int main() {
+
+    path path = "C:\\";
+    auto data = openDir(path);
+    int ind = 0;
+
+    while (true) {
+        showDir(data, path, ind);
+        help();
+
+        int key = _getch();
+        if (key == 224 || key == 0) key = _getch();
+
+        switch (key) {
+        case 72:
+            if (ind > 0)
+            {
+                ind--;
+                break;
+            }
+        case 80:
+            if (ind < data.size() - 1)
+            {
+                ind++;
+                break;
+            }
+        case 13:
+            if (!data.empty() && data[ind].flag) {
+                path /= data[ind].name;
+                data = openDir(path);
+                ind = 0;
+            }
+            break;
+    }
+}
