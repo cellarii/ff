@@ -7,6 +7,7 @@
 #include <conio.h>
 #include <chrono>
 #include <iomanip>
+#include <cctype>
 
 using namespace std;
 
@@ -109,8 +110,6 @@ void newFile(const path& path) {
     system("pause");
 }
 
-
-
 void newDir(const path& path) {
     string dirname;
     cout << "Введите имя папки: ";
@@ -120,10 +119,10 @@ void newDir(const path& path) {
 
     if (exists(patth)) {
         if (is_directory(patth)) {
-            cout << "Ошибка: Папка с таким именем уже существует\n";
+            cout << "Папка с таким именем уже существует\n";
         }
         else {
-            cout << "Ошибка: Файл с таким именем уже существует\n";
+            cout << "Файл с таким именем уже существует\n";
         }
         system("pause");
         return;
@@ -173,10 +172,10 @@ void rename(const path& path, const string& name1) {
 
         if (exists(path / name2)) {
             if (is_directory(path / name2)) {
-                cout << "Ошибка: Папка с таким именем уже существует\n";
+                cout << "Папка с таким именем уже существует\n";
             }
             else {
-                cout << "Ошибка: Файл с таким именем уже существует\n";
+                cout << "Файл с таким именем уже существует\n";
             }
             system("pause");
             return;
@@ -191,6 +190,15 @@ void rename(const path& path, const string& name1) {
     system("pause");
 }
 
+
+bool word(char c) {
+    return isspace(c) || ispunct(c);
+}
+
+bool word(char c) {
+    return isspace(c) || ispunct(c);
+}
+
 void search(const path& path, const string& keyword) {
     vector<pair<filesystem::path, int>> results;
 
@@ -202,8 +210,33 @@ void search(const path& path, const string& keyword) {
                 int count = 0;
 
                 while (getline(inFile, line)) {
-                    for (size_t pos = line.find(keyword); pos != string::npos; pos = line.find(keyword, pos + keyword.length())) {
-                        count++;
+                    string line2;
+                    for (char c : line) {
+                        line2 += tolower(c);
+                    }
+
+                    string key2;
+                    for (char c : keyword) {
+                        key2 += tolower(c);
+                    }
+
+                    size_t pos = line2.find(key2);
+                    while (pos != string::npos) {
+                        bool isWord = true;
+
+                        if (pos > 0 && !word(line2[pos - 1])) {
+                            isWord = false;
+                        }
+
+                        if (pos + key2.length() < line2.length() && !word(line2[pos + key2.length()])) {
+                            isWord = false;
+                        }
+
+                        if (isWord) {
+                            count++;
+                        }
+
+                        pos = line2.find(key2, pos + key2.length());
                     }
                 }
 
@@ -218,8 +251,8 @@ void search(const path& path, const string& keyword) {
         }
         else {
             cout << "Результаты поиска для слова \"" << keyword << "\":\n";
-            for (const auto& [filePath, count] : results) {
-                cout << filePath << " - " << count << " совпадений\n";
+            for (const auto& [fpath, count] : results) {
+                cout << fpath << " - " << count << " совпадений\n";
             }
         }
     }
@@ -283,28 +316,28 @@ int main() {
                 ind = 0;
             }
             break;
-        case 59: // F1
+        case 59: // F1 создать файл
             newFile(path);
             data = openDir(path);
             break;
-        case 60: // F2
+        case 60: // F2 создать папку
             newDir(path);
             data = openDir(path);
             break;
-        case 61: // F3
+        case 61: // F3 удалить
             if (!data.empty()) {
                 remove(path, data[ind].name, data[ind].flag);
                 data = openDir(path);
                 if (ind >= data.size()) ind = data.size() - 1;
             }
             break;
-        case 62: // F4
+        case 62: // F4 переименовать
             if (!data.empty()) {
                 rename(path, data[ind].name);
                 data = openDir(path);
             }
             break;
-        case 63: // F5
+        case 63: // F5 поиск
         {
             string keyword;
             cout << "Введите слово для поиска: ";
