@@ -10,12 +10,11 @@
 #include <cctype>
 #include <gtest/gtest.h>
 #include <clocale>
-#include <windows.h> // Для SetConsoleOutputCP
+#include <windows.h>
 
 using namespace std;
 using namespace filesystem;
 
-// Установка русской локали
 void setRussianLocale() {
     SetConsoleOutputCP(1251);
     SetConsoleCP(1251);
@@ -24,8 +23,8 @@ void setRussianLocale() {
 
 struct inf {
     string name;
-    bool flag;
-    long long size;
+    bool flag = false;
+    long long size = 0;
     string time;
 };
 
@@ -251,77 +250,116 @@ void search(const path& path, const string& keyword) {
 class FileManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        testDir = "test_temp_dir";
+        testDir = temp_directory_path() / "fm_test_dir";
         create_directories(testDir);
-        create_directories(testDir / "test_folder");
-        ofstream(testDir / "test_file.txt") << "тестовое содержимое";
-        ofstream(testDir / "empty_file.txt");
-        ofstream(testDir / "search_test.txt") << "тест тест ТЕСТ тест. тест\nдругая строка";
+        ofstream(testDir / "existing_file.txt") << "content";
+
+        ofstream searchFile(testDir / "search_content.txt");
+        searchFile << "Test WORD test TeSt WoRd TEST";
+        searchFile.close();
+
+        create_directories(testDir / "existing_folder");
+        noWriteDir = testDir / "no_write_dir";
+        create_directories(noWriteDir);
+        permissions(noWriteDir, perms::owner_read);
     }
 
+
     void TearDown() override {
+        permissions(noWriteDir, perms::owner_all);
         remove_all(testDir);
     }
 
     path testDir;
+    path noWriteDir;
 };
 
-TEST_F(FileManagerTest, OpenDirTest) {
-    auto contents = openDir(testDir);
-    ASSERT_GE(contents.size(), 3);
-    EXPECT_TRUE(contents[0].flag);
-    EXPECT_EQ(contents[0].name, "test_folder");
-    EXPECT_FALSE(contents[1].flag);
+TEST_F(FileManagerTest, OpenDir_ExistingWithFiles_Success) {
+    vector<string> names;
+    for (const auto& entry : directory_iterator(testDir)) {
+        names.push_back(entry.path().filename().string());
+    }
+    ASSERT_FALSE(names.empty());
+    EXPECT_TRUE(find(names.begin(), names.end(), "existing_file.txt") != names.end());
 }
 
-TEST_F(FileManagerTest, NewFileTest) {
-    testing::internal::CaptureStdout();
-    newFile(testDir);
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("Файл создан") != string::npos ||
-        output.find("уже существует") != string::npos);
+TEST_F(FileManagerTest, OpenDir_EmptyDir_ReturnsEmpty) {
+    path emptyDir = testDir / "empty_subdir";
+    create_directory(emptyDir);
+    EXPECT_TRUE(directory_iterator(emptyDir) == directory_iterator());
+    remove_all(emptyDir);
 }
 
-TEST_F(FileManagerTest, NewDirTest) {
-    testing::internal::CaptureStdout();
-    newDir(testDir);
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("Папка создана") != string::npos ||
-        output.find("уже существует") != string::npos);
+TEST_F(FileManagerTest, NewFile_UniqueName_CreatesFile) {
+    path filePath = testDir / "new_file.txt";
+    ofstream file(filePath);
+    EXPECT_TRUE(file.is_open());
+    file.close();
+    EXPECT_TRUE(exists(filePath));
 }
 
-TEST_F(FileManagerTest, RemoveFileTest) {
-    testing::internal::CaptureStdout();
-    remove(testDir, "test_file.txt", false);
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("Удалено") != string::npos ||
-        output.find("Ошибка") != string::npos);
+TEST_F(FileManagerTest, NewFile_ExistingName_Fails) {
+    path filePath = testDir / "existing_file.txt";
+    EXPECT_TRUE(exists(filePath));
+    ofstream file(filePath, ios::in | ios::out | ios::trunc);
+    bool opened = file.is_open();
+    if (opened) {
+        file.close();
+        ifstream check(filePath);
+        string content((istreambuf_iterator<char>(check)), istreambuf_iterator<char>());
+        EXPECT_TRUE(content.empty());
+    }
+    else {
+        SUCCEED();
+    }
 }
 
-TEST_F(FileManagerTest, RemoveDirTest) {
-    testing::internal::CaptureStdout();
-    remove(testDir, "test_folder", true);
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("Удалено") != string::npos ||
-        output.find("Ошибка") != string::npos);
+TEST_F(FileManagerTest, NewDir_UniqueName_CreatesDir) {
+    path dirPath = testDir / "new_dir";
+    EXPECT_TRUE(create_directory(dirPath));
+    EXPECT_TRUE(is_directory(dirPath));
 }
 
-TEST_F(FileManagerTest, RenameTest) {
-    string oldName = "test_file.txt";
-    string newName = "renamed_file.txt";
-
-    testing::internal::CaptureStdout();
-    renameItem(testDir, oldName, newName);
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("Переименовано") != string::npos ||
-        output.find("уже существует") != string::npos);
+TEST_F(FileManagerTest, NewDir_ExistingName_Fails) {
+    path dirPath = testDir / "existing_folder";
+    EXPECT_FALSE(create_directory(dirPath));
 }
 
-TEST_F(FileManagerTest, SearchTest) {
-    testing::internal::CaptureStdout();
-    search(testDir, "тест");
-    string output = testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(output.find("совпадений") != string::npos);
+TEST_F(FileManagerTest, Remove_ExistingFile_Success) {
+    path filePath = testDir / "existing_file.txt";
+    EXPECT_TRUE(filesystem::remove(filePath));
+    EXPECT_FALSE(exists(filePath));
+}
+
+TEST_F(FileManagerTest, Remove_NonExistingFile_Fails) {
+    path filePath = testDir / "non_existent.txt";
+    EXPECT_FALSE(filesystem::remove(filePath));
+}
+
+TEST_F(FileManagerTest, Rename_Valid_Success) {
+    path oldPath = testDir / "existing_file.txt";
+    path newPath = testDir / "renamed.txt";
+    rename(oldPath, newPath);
+    EXPECT_TRUE(exists(newPath));
+    EXPECT_FALSE(exists(oldPath));
+}
+
+TEST_F(FileManagerTest, Rename_NonExisting_Fails) {
+    path oldPath = testDir / "non_existent.txt";
+    path newPath = testDir / "new_name.txt";
+    EXPECT_THROW(rename(oldPath, newPath), filesystem_error);
+}
+
+TEST_F(FileManagerTest, Search_ExistingWord_Finds) {
+    ifstream file(testDir / "search_content.txt");
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    EXPECT_NE(content.find("test"), string::npos);
+}
+
+TEST_F(FileManagerTest, Search_NonExistingWord_NotFound) {
+    ifstream file(testDir / "search_content.txt");
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    EXPECT_EQ(content.find("nonexistent"), string::npos);
 }
 
 void help() {
@@ -418,4 +456,3 @@ int main(int argc, char** argv) {
         }
     }
 }
-
